@@ -41,7 +41,7 @@ class HandleCommand():
                     contents = parts[1].split('|')
                     with open(list_path, 'r+') as f:
                         lines = []
-                        for i in range(61):
+                        for i in range(71):
                             line = f.readline()
                             lines.append(line)
                         f.seek(len(''.join(lines)))
