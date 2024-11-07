@@ -20,11 +20,13 @@ import socket
 import threading
 import subprocess
 import time
+import os
 
 HOST = '0.0.0.0'
 PORT = 8001
-list_path = '/home/ubuntu/StanfordQuadruped/src/createDanceActionListSample.py'
-run_path =  '/home/ubuntu/StanfordQuadruped/run_danceActionList.py'
+cwd = os.getcwd()
+list_path = cwd + '/src/createDanceActionListSample.py'
+run_path =  cwd + '/run_danceActionList.py'
 
 class HandleCommand():
 
