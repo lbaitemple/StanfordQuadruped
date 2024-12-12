@@ -177,53 +177,53 @@ class MovementGroups:
         self.MovementLib.append(dance_scheme)      # append dance
         return self.MovementLib
                           
-    def move_forward(self):
+    def move_forward(self, speed_x=0.15):
         """Set robot move forward as 0.15m/s, you can change the velocity parameter in this function.
         Returns:
         	Append the move forward movement into MovementLib
         """
         dance_scheme = Movements('move_forward')
         dance_all_legs = self.default_stand
-        dance_speed = [[0.15,0,0]]    # speed_x, speed_y, no_use
+        dance_speed = [[speed_x,0,0]]    # speed_x, speed_y, no_use
         dance_attitude = [[0,0,0]]    # roll, pitch, yaw degree
         dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
         self.MovementLib.append(dance_scheme)      # append dance
         return self.MovementLib
      
-    def move_backward(self):
+    def move_backward(self, speed_x=-0.15):
         """Set robot move backward as 0.15m/s, you can change the velocity parameter in this function.
         Returns:
         	Append the move backward movement into MovementLib
         """
         dance_scheme = Movements('move_backward')
         dance_all_legs = self.default_stand
-        dance_speed = [[-0.15,0,0]]   # speed_x, speed_y, no_use
+        dance_speed = [[speed_x,0,0]]   # speed_x, speed_y, no_use
         dance_attitude = [[0,0,0]]    # roll, pitch, yaw degree
         dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
         self.MovementLib.append(dance_scheme)      # append dance
         return self.MovementLib
 
-    def move_right(self):
+    def move_right(self, speed_x=-0.15):
         """Set robot move right as 0.15m/s, you can change the velocity parameter in this function.
         Returns:
         	Append the move right movement into MovementLib
         """
         dance_scheme = Movements('move_right')
         dance_all_legs = self.default_stand
-        dance_speed = [[0,-0.15,0]]    # speed_x, speed_y, no_use
+        dance_speed = [[0,speed_x,0]]    # speed_x, speed_y, no_use
         dance_attitude = [[0,0,0]]     # roll, pitch, yaw rate
         dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
         self.MovementLib.append(dance_scheme)      # append dance
         return self.MovementLib
   
-    def move_left(self):
+    def move_left(self, speed_x=0.15):
         """Set robot move left as 0.15m/s, you can change the velocity parameter in this function.
         Returns:
         	Append the move left movement into MovementLib
         """
         dance_scheme = Movements('move_left')
         dance_all_legs = self.default_stand
-        dance_speed = [[0,0.15,0]]    # speed_x, speed_y, no_use
+        dance_speed = [[0,speed_x,0]]    # speed_x, speed_y, no_use
         dance_attitude = [[0,0,0]]    # roll, pitch, yaw degree
         dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
         self.MovementLib.append(dance_scheme)      # append dance
