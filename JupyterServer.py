@@ -21,6 +21,7 @@ import threading
 import subprocess
 import time
 import os
+import argparse
 
 HOST = '0.0.0.0'
 PORT = 8001
@@ -30,10 +31,12 @@ run_path =  cwd + '/run_danceActionList.py'
 
 class HandleCommand():
 
-    def __init__(self):
+    def __init__(self, dance_args):
         self.current_process = None
         self.process_running = False
         self.process_lock = threading.Lock()
+        self.dance_args = dance_args.split()  # Split string into list for subprocess
+
 
     def handle_command(self,command):
         with self.process_lock:
@@ -67,7 +70,7 @@ class HandleCommand():
                     return "No process running"
             elif command == ("EXECUTE") and not self.process_running:
                 try:
-                    self.current_process = subprocess.Popen(['python', run_path], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                    self.current_process = subprocess.Popen(['python', run_path]+ self.dance_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
                     self.process_running = True
                     return f"Process started"
                 except Exception as e:
@@ -108,6 +111,14 @@ class HandleCommand():
                     print(f"Connection with {addr} closed")
 
 if __name__ == "__main__":
-    handler = HandleCommand()
+    parser = argparse.ArgumentParser(description="Dance Action Server")
+    parser.add_argument(
+        '--dance_args',
+        type=str,
+        default="--use_imu --no_display",
+        help='Arguments to pass to run_danceActionList.py'
+    )
+    args = parser.parse_args()
+    handler = HandleCommand(args.dance_args)
     handler.server()
 
