@@ -1,3 +1,4 @@
+import argparse
 import numpy as np
 import time
 from src.IMU import IMU
@@ -11,15 +12,17 @@ from src.MovementScheme import MovementScheme
 from src.createDanceActionListSample import MovementLib
 from src.Command import Command
 
-def main(use_imu=False):
-    """Main program
-    """
-
+def main(use_imu=False, use_display=True):
+    """Main program"""
     # Create config
     config = Configuration()
     hardware_interface = HardwareInterface()
-    disp = Display()
-    disp.show_ip()
+
+    if use_display:
+        disp = Display()
+        disp.show_ip()
+    else:
+        disp = None
 
     # Create imu handle
     if use_imu:
@@ -33,7 +36,7 @@ def main(use_imu=False):
     )
     state = State()
 
-    #Create movement group scheme instance and set a default True state
+    # Create movement group scheme instance and set a default True state
     movementCtl = MovementScheme(MovementLib)
     dance_active_state = True
     lib_length = len(MovementLib)
@@ -56,8 +59,7 @@ def main(use_imu=False):
         state.quat_orientation = quat_orientation
 
         # Step the controller forward by dt
-        if dance_active_state == True:
-            # Caculate legsLocation, attitudes and speed using custom movement script
+        if dance_active_state:
             movementCtl.runMovementScheme()
             command.legslocation        = movementCtl.getMovemenLegsLocation()
             command.horizontal_velocity = movementCtl.getMovemenSpeed()
@@ -68,12 +70,19 @@ def main(use_imu=False):
             controller.run(state, command, disp)
         else:
             controller.run(state, command, disp)
+
         if movementCtl.movement_now_number >= lib_length - 1 and movementCtl.tick >= movementCtl.now_ticks:
             print("exit the process")
             break
 
-
         # Update the pwm widths going to the servos
         hardware_interface.set_actuator_postions(state.joint_angles)
 
-main()
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Mini Pupper Dance Control Script")
+    parser.add_argument("--use_imu", action="store_true", help="Enable IMU sensor reading")
+    parser.add_argument("--no_display", action="store_true", help="Disable OLED display")
+
+    args = parser.parse_args()
+
+    main(use_imu=args.use_imu, use_display=not args.no_display)
