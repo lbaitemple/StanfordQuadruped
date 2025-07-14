@@ -115,7 +115,7 @@ if __name__ == "__main__":
     parser.add_argument(
         '--dance_args',
         type=str,
-        default="--use_imu --no_display",
+        default="", #--use_imu --no_display",
         help='Arguments to pass to run_danceActionList.py'
     )
     args = parser.parse_args()
