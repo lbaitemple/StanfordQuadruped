@@ -49,7 +49,6 @@ class SocketSender:
             "Move.rotate",
             "Move.body_row",
             "Move.head_move",
-            "Move.body_row",
             "Move.gait_uni",
             "Move.height_move",
             "Move.foreleg_lift",
