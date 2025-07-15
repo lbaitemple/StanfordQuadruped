@@ -50,6 +50,7 @@ class SocketSender:
             "Move.body_row",
             "Move.head_move",
             "Move.gait_uni",
+            "Move.bowback",
             "Move.height_move",
             "Move.foreleg_lift",
             "Move.backleg_lift",
