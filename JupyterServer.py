@@ -90,7 +90,17 @@ class HandleCommand():
                 with conn:
                     print(f"Connected by {addr}")
                     while True:
-                        data = conn.recv(1024)
+                        # Receive data in chunks until we get a complete message
+                        data = b''
+                        while True:
+                            chunk = conn.recv(1024)
+                            if not chunk:
+                                break
+                            data += chunk
+                            # Check if we have a complete message (assuming messages end with newline or are complete)
+                            if len(chunk) < 1024:  # Last chunk is smaller than buffer size
+                                break
+                        
                         if not data:
                             time.sleep(0.1)
                             break
