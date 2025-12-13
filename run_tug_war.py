@@ -116,7 +116,11 @@ def main(use_imu=False):
             front_touched = is_touched(TOUCH_FRONT)
             left_touched = is_touched(TOUCH_LEFT)
             right_touched = is_touched(TOUCH_RIGHT)
-
+            
+            # Ignore front sensor during tug-of-war to prevent false triggers from pitch angle
+            if tug_active and command.pitch < -5:
+                front_touched = False
+                
             # Back sensor - start tug-of-war
             if back_touched and (current_time - last_trigger_time > DEBOUNCE_TIME):
                 if not tug_active:
