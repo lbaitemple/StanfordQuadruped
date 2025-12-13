@@ -380,6 +380,11 @@ class MovementScheme:
     """
     def __init__(self,movements_lib):
 
+        if not movements_lib:
+            print("[WARNING] Movement library is empty. Adding a default stop movement.")
+            default_movement = Movements('stop')
+            movements_lib.append(default_movement)
+
         self.movements_lib = movements_lib
 
         self.movements_now = movements_lib[0]
@@ -412,10 +417,10 @@ class MovementScheme:
         self.attitude_pre = AttitudeStanding
         self.attitude_now = AttitudeStanding
         
-        self.legslocation_done_index = np.zeros((3,4))
-        self.speed_done_index = [0,0,0]
-        self.attitude_done_index = [0,0,0]
-        self.turn_done_index = 0
+        self.legslocation_done = np.zeros((3,4))
+        self.speed_done = np.zeros(3)
+        self.attitude_done = np.zeros(3)
+        self.turn_done = 0
 
         self.legslocation_gradient_done = False
         self.speed_gradient_done = False
@@ -435,6 +440,12 @@ class MovementScheme:
         
         # criterion that make sure delta of the movement transition are obtained at the begining of the transition and doesn't change later
         self.getAccCommand = True 
+
+        # Initialize ALL done_index attributes to prevent AttributeError
+        self.legslocation_done_index = [[0 for _ in range(4)] for _ in range(3)]
+        self.speed_done_index = [0 for _ in range(2)]
+        self.attitude_done_index = [0, 0, 0]  # FIXED: Added initialization
+        self.turn_done_index = 0  # FIXED: Added initialization
 
     def updateMovementType(self):
         """used to update movement ,caculate which movement should be move

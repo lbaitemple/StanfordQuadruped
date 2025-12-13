@@ -65,17 +65,18 @@ class MovementGroups:
         Returns:
         	Append the default standing position into MovementLib
         """
-        if time <=0:
+        if time <= 0:
             time = self.dt
         interval = int(time / self.dt)
         dance_scheme = Movements('stop')
         dance_all_legs = self.default_stand
-        dance_speed = [[0,0,0],[0,0,0]]        # speed_x, speed_y, no_use
-        dance_attitude = [[0,0,0]]     # roll, pitch, yaw degree
+        dance_speed = [[0, 0, 0], [0, 0, 0]]  # Ensure two points for Forever mode
+        dance_attitude = [[0, 0, 0], [0, 0, 0]]  # Ensure two points for Forever mode
         dance_scheme.setInterpolationNumber(interval)
         dance_scheme.setTransitionTic(70)
-        dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
-        self.MovementLib.append(dance_scheme)      # append dance
+        dance_scheme.setAllSequence(dance_all_legs, dance_speed, dance_attitude)
+        self.MovementLib.append(dance_scheme)  # Append dance
+        # print("[DEBUG] MovementLib after stop:", self.MovementLib)
         return self.MovementLib
  
     def look_up(self):  
@@ -366,7 +367,7 @@ class MovementGroups:
         time_dt = 0.01
         if time_uni <= 0:
             time_uni = self.dt
-        if time_acc <=0:
+        if time_acc <= 0:
             time_acc = self.dt
         interval_uni = int(time_uni / self.dt) #number of times to keep the uniform state 
         interval_acc = int(time_acc / self.dt) #number of times to move the leg in order to reach desired place
@@ -709,7 +710,7 @@ class MovementGroups:
 #----------- The level3 samples to DIY complicated movement END -----------#  
 
 
-########## Tug-of-War Movement ###########
+########## Tug-of-War Movement (CORRECTED) ###########
 
     def set_tug_of_war(self, active, pulling=True, strength=1.0):
         """Real-time control for tug-of-war mode.
@@ -746,12 +747,8 @@ class MovementGroups:
         Returns:
             Append the tug-of-war movement into MovementLib
         """
-        # Update real-time state
-        self.tug_of_war_active = True
-        self.tug_of_war_pulling = pulling
-        self.tug_of_war_strength = self.cap_limit(1.0, 0.0, pull_strength)
-        
-        pull_strength = self.tug_of_war_strength
+        # Validate and cap pull_strength
+        pull_strength = self.cap_limit(1.0, 0.0, pull_strength)
         
         dance_scheme = Movements('tug_of_war')
         
@@ -759,7 +756,7 @@ class MovementGroups:
             # Aggressive pulling stance - low, wide, extended
             # Lower height for stability (default is -0.07)
             low_height = -0.07 - (0.03 * pull_strength)  # -0.07 to -0.10m
-            low_height = max(low_height, -0.10)  # safety limit
+            low_height = self.cap_limit(-0.05, -0.10, low_height)  # safety limit
             
             # Wider stance for traction
             y_spread = 0.01 * pull_strength
@@ -774,39 +771,47 @@ class MovementGroups:
             pitch_angle = -5 - (5 * pull_strength)
             modified_pitch = self.cap_limit(self.pitchcap, -self.pitchcap, pitch_angle)
             
-            # Stance geometry
+            # Stance geometry - each leg needs two identical positions for interpolation
             pull_stance = [
-                [[0.06 + front_extend, y_right, low_height]],
-                [[0.06 + front_extend, y_left, low_height]],
-                [[-0.06 - back_extend, y_right, low_height]],
-                [[-0.06 - back_extend, y_left, low_height]]
+                [[0.06 + front_extend, y_right, low_height], [0.06 + front_extend, y_right, low_height]],
+                [[0.06 + front_extend, y_left, low_height], [0.06 + front_extend, y_left, low_height]],
+                [[-0.06 - back_extend, y_right, low_height], [-0.06 - back_extend, y_right, low_height]],
+                [[-0.06 - back_extend, y_left, low_height], [-0.06 - back_extend, y_left, low_height]]
             ]
             
             dance_all_legs = pull_stance
             
-            # --- UPDATE HERE ---
-            # Set negative X velocity to move backward.
+            # Set negative X velocity to move backward
             # Standard move_backward is -0.15. We scale it by strength.
-            # -0.15 * 1.0 = -0.15 m/s backward speed
             backward_speed = -0.15 * pull_strength 
-            dance_speed = [[backward_speed, 0, 0]] 
-            # -------------------
-
-            dance_attitude = [[0, modified_pitch, 0]]
+            dance_speed = [[backward_speed, 0, 0], [backward_speed, 0, 0]] 
+            
+            dance_attitude = [[0, modified_pitch, 0], [0, modified_pitch, 0]]
             
             dance_scheme.setLegsSequence(dance_all_legs, "Forever")
             dance_scheme.setSpeedSequence(dance_speed, "Forever")
             dance_scheme.setAttitudeSequence(dance_attitude, "Forever")
+            dance_scheme.setTransitionTic(1)  # Instant transition
+            dance_scheme.setInterpolationNumber(1)
         else:
-            # Relaxed stance - just normal standing
-            dance_all_legs = self.default_stand
-            dance_speed = [[0, 0, 0]]
-            dance_attitude = [[0, 0, 0]]
+            # Relaxed stance - normal standing position
+            # FIXED: Properly structure the legs list
+            dance_all_legs = [
+                [self.default_stand[0][0], self.default_stand[0][0]],  # leg 1
+                [self.default_stand[1][0], self.default_stand[1][0]],  # leg 2
+                [self.default_stand[2][0], self.default_stand[2][0]],  # leg 3
+                [self.default_stand[3][0], self.default_stand[3][0]]   # leg 4
+            ]
+            dance_speed = [[0, 0, 0], [0, 0, 0]]
+            dance_attitude = [[0, 0, 0], [0, 0, 0]]
             
             dance_scheme.setLegsSequence(dance_all_legs, "Forever")
             dance_scheme.setSpeedSequence(dance_speed, "Forever")
             dance_scheme.setAttitudeSequence(dance_attitude, "Forever")
+            dance_scheme.setTransitionTic(1)  # Instant transition
+            dance_scheme.setInterpolationNumber(1)
         
+        # FIXED: Added missing append
         self.MovementLib.append(dance_scheme)
         return self.MovementLib
     
