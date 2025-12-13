@@ -41,6 +41,11 @@ class MovementGroups:
         self.lowcap = 0.05
         self.legliftcap = 0.06
         
+        # Tug-of-war real-time control state
+        self.tug_of_war_active = False
+        self.tug_of_war_pulling = False
+        self.tug_of_war_strength = 1.0
+        
     def cap_limit(self, MAX, MIN, value):
         """define the movement limit to make sure motors' safety"""
         if value > MAX:
@@ -60,17 +65,18 @@ class MovementGroups:
         Returns:
         	Append the default standing position into MovementLib
         """
-        if time <=0:
+        if time <= 0:
             time = self.dt
         interval = int(time / self.dt)
         dance_scheme = Movements('stop')
         dance_all_legs = self.default_stand
-        dance_speed = [[0,0,0],[0,0,0]]        # speed_x, speed_y, no_use
-        dance_attitude = [[0,0,0]]     # roll, pitch, yaw degree
+        dance_speed = [[0, 0, 0], [0, 0, 0]]  # Ensure two points for Forever mode
+        dance_attitude = [[0, 0, 0], [0, 0, 0]]  # Ensure two points for Forever mode
         dance_scheme.setInterpolationNumber(interval)
         dance_scheme.setTransitionTic(70)
-        dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
-        self.MovementLib.append(dance_scheme)      # append dance
+        dance_scheme.setAllSequence(dance_all_legs, dance_speed, dance_attitude)
+        self.MovementLib.append(dance_scheme)  # Append dance
+        # print("[DEBUG] MovementLib after stop:", self.MovementLib)
         return self.MovementLib
  
     def look_up(self):  
@@ -177,53 +183,53 @@ class MovementGroups:
         self.MovementLib.append(dance_scheme)      # append dance
         return self.MovementLib
                           
-    def move_forward(self, speed_x=0.15):
+    def move_forward(self):
         """Set robot move forward as 0.15m/s, you can change the velocity parameter in this function.
         Returns:
         	Append the move forward movement into MovementLib
         """
         dance_scheme = Movements('move_forward')
         dance_all_legs = self.default_stand
-        dance_speed = [[speed_x,0,0]]    # speed_x, speed_y, no_use
+        dance_speed = [[0.15,0,0]]    # speed_x, speed_y, no_use
         dance_attitude = [[0,0,0]]    # roll, pitch, yaw degree
         dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
         self.MovementLib.append(dance_scheme)      # append dance
         return self.MovementLib
      
-    def move_backward(self, speed_x=-0.15):
+    def move_backward(self):
         """Set robot move backward as 0.15m/s, you can change the velocity parameter in this function.
         Returns:
         	Append the move backward movement into MovementLib
         """
         dance_scheme = Movements('move_backward')
         dance_all_legs = self.default_stand
-        dance_speed = [[speed_x,0,0]]   # speed_x, speed_y, no_use
+        dance_speed = [[-0.15,0,0]]   # speed_x, speed_y, no_use
         dance_attitude = [[0,0,0]]    # roll, pitch, yaw degree
         dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
         self.MovementLib.append(dance_scheme)      # append dance
         return self.MovementLib
 
-    def move_right(self, speed_x=-0.15):
+    def move_right(self):
         """Set robot move right as 0.15m/s, you can change the velocity parameter in this function.
         Returns:
         	Append the move right movement into MovementLib
         """
         dance_scheme = Movements('move_right')
         dance_all_legs = self.default_stand
-        dance_speed = [[0,speed_x,0]]    # speed_x, speed_y, no_use
+        dance_speed = [[0,-0.15,0]]    # speed_x, speed_y, no_use
         dance_attitude = [[0,0,0]]     # roll, pitch, yaw rate
         dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
         self.MovementLib.append(dance_scheme)      # append dance
         return self.MovementLib
   
-    def move_left(self, speed_x=0.15):
+    def move_left(self):
         """Set robot move left as 0.15m/s, you can change the velocity parameter in this function.
         Returns:
         	Append the move left movement into MovementLib
         """
         dance_scheme = Movements('move_left')
         dance_all_legs = self.default_stand
-        dance_speed = [[0,speed_x,0]]    # speed_x, speed_y, no_use
+        dance_speed = [[0,0.15,0]]    # speed_x, speed_y, no_use
         dance_attitude = [[0,0,0]]    # roll, pitch, yaw degree
         dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
         self.MovementLib.append(dance_scheme)      # append dance
@@ -283,35 +289,6 @@ class MovementGroups:
         
  #----------- The simple APIs without input parameters END -----------#
 
-    def balance(self, roll_deg, pitch_deg, time_uni, time_acc):
-        """Set the robot to tilt its body to a certain angle
-        Args:
-            roll_deg: the desired angle you want the robot to roll 
-            pitch_deg: the desired angle you want the robot to pitch
-            time_acc: how long it takes to reach the desired angle (unit: second)
-            time_uni: how long pupper will keep at the desired pose (unit: second)
-        Return:
-            Append the body row movement into the MovementLib
-        """
-        time_dt = 0.01
-        if time_uni <= 0:
-            time_uni = self.dt
-        if time_acc <=0:
-            time_acc = self.dt
-        interval_uni = int(time_uni / self.dt) #number of times to keep the uniform state 
-        interval_acc = int(time_acc / self.dt) #number of times to move the leg in order to reach desired place
-        modified_roll = self.cap_limit(self.rowcap, -self.rowcap, roll_deg) #limit the angle such that it won't go out the safe limit
-        modified_pitch = self.cap_limit(self.pitchcap, -self.pitchcap, pitch_deg) #limit the angle such that it won't go out the safe limit
-        dance_scheme = Movements('balance') 
-        dance_all_legs = self.default_stand #
-        dance_speed = [[0,0,0]]        # speed_x, speed_y, no_use 
-        dance_attitude = [[modified_roll,modified_pitch,0],[modified_roll,modified_pitch,0]]     # roll, pitch, yaw degree
-        dance_scheme.setInterpolationNumber(interval_uni) #Number of reaching point on the curve such that the legs move on the way to its desired position
-        dance_scheme.setTransitionTic(interval_acc) #Time taken from 1 step to the next step
-        dance_scheme.setLegsSequence(dance_all_legs) #Which leg to move 
-        dance_scheme.setAttitudeSequence(dance_attitude) #setAttitude of the body to move the legs 
-        self.MovementLib.append(dance_scheme)      # append dance
-        return self.MovementLib
 
 
  ########## The level2 APIs with input parameters ###########
@@ -373,6 +350,42 @@ class MovementGroups:
         dance_scheme.setAllSequence(dance_all_legs,dance_speed,dance_attitude)
         self.MovementLib.append(dance_scheme)      # append dance
         return self.MovementLib
+    
+
+    
+
+    def balance(self, roll_deg, pitch_deg, time_uni, time_acc):
+        """Set the robot to tilt its body to a certain angle
+        Args:
+            roll_deg: the desired angle you want the robot to roll 
+            pitch_deg: the desired angle you want the robot to pitch
+            time_acc: how long it takes to reach the desired angle (unit: second)
+            time_uni: how long pupper will keep at the desired pose (unit: second)
+        Return:
+            Append the body row movement into the MovementLib
+        """
+        time_dt = 0.01
+        if time_uni <= 0:
+            time_uni = self.dt
+        if time_acc <= 0:
+            time_acc = self.dt
+        interval_uni = int(time_uni / self.dt) #number of times to keep the uniform state 
+        interval_acc = int(time_acc / self.dt) #number of times to move the leg in order to reach desired place
+        modified_roll = self.cap_limit(self.rowcap, -self.rowcap, roll_deg) #limit the angle such that it won't go out the safe limit
+        modified_pitch = self.cap_limit(self.pitchcap, -self.pitchcap, pitch_deg) #limit the angle such that it won't go out the safe limit
+        dance_scheme = Movements('balance') 
+        dance_all_legs = self.default_stand #
+        dance_speed = [[0,0,0]]        # speed_x, speed_y, no_use 
+        dance_attitude = [[modified_roll,modified_pitch,0],[modified_roll,modified_pitch,0]]     # roll, pitch, yaw degree
+        dance_scheme.setInterpolationNumber(interval_uni) #Number of reaching point on the curve such that the legs move on the way to its desired position
+        dance_scheme.setTransitionTic(interval_acc) #Time taken from 1 step to the next step
+        dance_scheme.setLegsSequence(dance_all_legs) #Which leg to move 
+        dance_scheme.setAttitudeSequence(dance_attitude) #setAttitude of the body to move the legs 
+        self.MovementLib.append(dance_scheme)      # append dance
+        return self.MovementLib
+
+
+
     
     def gait_uni(self, v_x = 0, v_y = 0, time_uni = 1, time_acc = 1):
         """Let robot gait uniformly for a given time
@@ -695,3 +708,121 @@ class MovementGroups:
         return self.MovementLib
 
 #----------- The level3 samples to DIY complicated movement END -----------#  
+
+
+########## Tug-of-War Movement (CORRECTED) ###########
+
+    def set_tug_of_war(self, active, pulling=True, strength=1.0):
+        """Real-time control for tug-of-war mode.
+        
+        Call this to instantly change the tug-of-war state. The movement will
+        respond on the next control loop iteration.
+        
+        Args:
+            active: True to enable tug-of-war mode, False to disable and return to normal
+            pulling: True to actively pull backward, False to just hold braced stance
+            strength: 0.0 to 1.0, scales the intensity (default: 1.0)
+        
+        Example:
+            mg = MovementGroups()
+            mg.set_tug_of_war(True, pulling=True)   # Start pulling
+            mg.set_tug_of_war(True, pulling=False)  # Stop pulling, hold stance
+            mg.set_tug_of_war(False)                # Exit tug-of-war mode
+        """
+        self.tug_of_war_active = active
+        self.tug_of_war_pulling = pulling
+        self.tug_of_war_strength = self.cap_limit(1.0, 0.0, strength)
+    
+    def is_tug_of_war_active(self):
+        """Check if tug-of-war mode is currently active."""
+        return self.tug_of_war_active
+
+    def tug_of_war(self, pulling=True, pull_strength=1.0):
+        """Tug-of-war stance with backward movement.
+        
+        Args:
+            pulling: True to actively pull backward, False to just hold braced stance
+            pull_strength: 0.0 to 1.0, scales the intensity (default: 1.0)
+        
+        Returns:
+            Append the tug-of-war movement into MovementLib
+        """
+        # Validate and cap pull_strength
+        pull_strength = self.cap_limit(1.0, 0.0, pull_strength)
+        
+        dance_scheme = Movements('tug_of_war')
+        
+        if pulling:
+            # Aggressive pulling stance - low, wide, extended
+            # Lower height for stability (default is -0.07)
+            low_height = -0.07 - (0.03 * pull_strength)  # -0.07 to -0.10m
+            low_height = self.cap_limit(-0.05, -0.10, low_height)  # safety limit
+            
+            # Wider stance for traction
+            y_spread = 0.01 * pull_strength
+            y_right = -0.05 - y_spread
+            y_left = 0.05 + y_spread
+            
+            # Extend legs for grip
+            front_extend = 0.02 * pull_strength
+            back_extend = 0.02 * pull_strength
+            
+            # Pitch backward to shift weight to rear legs
+            pitch_angle = -5 - (5 * pull_strength)
+            modified_pitch = self.cap_limit(self.pitchcap, -self.pitchcap, pitch_angle)
+            
+            # Stance geometry - each leg needs two identical positions for interpolation
+            pull_stance = [
+                [[0.06 + front_extend, y_right, low_height], [0.06 + front_extend, y_right, low_height]],
+                [[0.06 + front_extend, y_left, low_height], [0.06 + front_extend, y_left, low_height]],
+                [[-0.06 - back_extend, y_right, low_height], [-0.06 - back_extend, y_right, low_height]],
+                [[-0.06 - back_extend, y_left, low_height], [-0.06 - back_extend, y_left, low_height]]
+            ]
+            
+            dance_all_legs = pull_stance
+            
+            # Set negative X velocity to move backward
+            # Standard move_backward is -0.15. We scale it by strength.
+            backward_speed = -0.15 * pull_strength 
+            dance_speed = [[backward_speed, 0, 0], [backward_speed, 0, 0]] 
+            
+            dance_attitude = [[0, modified_pitch, 0], [0, modified_pitch, 0]]
+            
+            dance_scheme.setLegsSequence(dance_all_legs, "Forever")
+            dance_scheme.setSpeedSequence(dance_speed, "Forever")
+            dance_scheme.setAttitudeSequence(dance_attitude, "Forever")
+            dance_scheme.setTransitionTic(1)  # Instant transition
+            dance_scheme.setInterpolationNumber(1)
+        else:
+            # Relaxed stance - normal standing position
+            # FIXED: Properly structure the legs list
+            dance_all_legs = [
+                [self.default_stand[0][0], self.default_stand[0][0]],  # leg 1
+                [self.default_stand[1][0], self.default_stand[1][0]],  # leg 2
+                [self.default_stand[2][0], self.default_stand[2][0]],  # leg 3
+                [self.default_stand[3][0], self.default_stand[3][0]]   # leg 4
+            ]
+            dance_speed = [[0, 0, 0], [0, 0, 0]]
+            dance_attitude = [[0, 0, 0], [0, 0, 0]]
+            
+            dance_scheme.setLegsSequence(dance_all_legs, "Forever")
+            dance_scheme.setSpeedSequence(dance_speed, "Forever")
+            dance_scheme.setAttitudeSequence(dance_attitude, "Forever")
+            dance_scheme.setTransitionTic(1)  # Instant transition
+            dance_scheme.setInterpolationNumber(1)
+        
+        # FIXED: Added missing append
+        self.MovementLib.append(dance_scheme)
+        return self.MovementLib
+    
+    def tug_of_war_stop(self):
+        """Stop tug-of-war and return to default stance.
+        
+        This is a convenience method that disables tug-of-war mode and
+        queues a stop movement to return to normal standing position.
+        """
+        self.tug_of_war_active = False
+        self.tug_of_war_pulling = False
+        return self.stop(time=0.5)
+
+#----------- Tug-of-War Movement END -----------#
